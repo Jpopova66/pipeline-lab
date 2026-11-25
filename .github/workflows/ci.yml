@@ -20,3 +20,14 @@ jobs:
       - run: pip install -r app/requirements-dev.txt
       - run: ruff check app
       - run: pytest app/tests -v
+
+  docker:
+    needs: lint-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build --build-arg APP_VERSION=${{ github.sha }} \
+            -t ghcr.io/jpopova66/pipeline-lab:${{ github.sha }} app
