@@ -146,8 +146,9 @@ git push
       - uses: actions/checkout@v4
 
       - name: Build image
-        run: docker build --build-arg APP_VERSION=${{ github.sha }} \
-               -t ghcr.io/<ВПИШИТЕ логин>/pipeline-lab:${{ github.sha }} app
+        run: |
+          docker build --build-arg APP_VERSION=${{ github.sha }} \
+            -t ghcr.io/<ВПИШИТЕ логин>/pipeline-lab:${{ github.sha }} app
 ```
 
 Пушим, смотрим прогон. Пока образ просто собирается и остаётся
@@ -164,10 +165,10 @@ git push
 
 ```yaml
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/<ВПИШИТЕ логин>/pipeline-lab:${{ github.sha }}
-          severity: CRITICAL,HIGH
+          severity: CRITICAL
           exit-code: "1"
 ```
 
@@ -178,6 +179,10 @@ git push
 - что такое CVE и severity;
 - чем `CRITICAL` отличается от `MEDIUM`;
 - почему `exit-code: "1"` роняет пайплайн — и почему это хорошо.
+
+Пока смотрим только `CRITICAL`. На HIGH тоже будут находки (их
+десятки даже на свежем образе) — **как жить с ними, разберём
+на занятии 2** в задании про `.trivyignore`.
 
 **Чиним.** Откройте `app/Dockerfile` и замените первую строку:
 
@@ -226,15 +231,20 @@ permissions:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push image
-        run: |
-          IMAGE=ghcr.io/<ВПИШИТЕ логин>/pipeline-lab
-          docker tag $IMAGE:${{ github.sha }} $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
-          docker push $IMAGE:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: true
+          build-args: APP_VERSION=${{ github.sha }}
+          tags: |
+            ghcr.io/<ВПИШИТЕ логин>/pipeline-lab:${{ github.sha }}
+            ghcr.io/<ВПИШИТЕ логин>/pipeline-lab:latest
 ```
 
 `GITHUB_TOKEN` создавать не нужно — GitHub выдаёт его каждому прогону
-автоматически. Пушим.
+автоматически. Образ пересоберётся из кэша (секунды) и уедет в GHCR.
+Ручной `docker push` здесь не используем: с токеном GitHub Actions
+он отвечает `denied`, а action делает то же самое надёжно. Пушим.
 
 **5.3.** Проверьте: GitHub → ваш профиль → вкладка **Packages** —
 там появился пакет `pipeline-lab`. Откройте его и сделайте **public**
