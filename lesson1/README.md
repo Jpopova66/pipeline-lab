@@ -43,7 +43,8 @@ docker compose up -d
 ```
 
 Дождитесь, пока откроется http://localhost:8082 (admin / password).
-Контейнер один — база встроенная, postgres здесь не нужен.
+Контейнера два: сам реестр и его PostgreSQL — JCR хранит данные
+в базе, как и Artifactory из прошлой лабы.
 
 **0.3. Токен для GHCR.** GitHub → Settings → Developer settings →
 Personal access tokens → Tokens (classic) → Generate new token.
@@ -268,6 +269,18 @@ permissions:
 приложение, ходят **только в Artifactory**, наружу — никогда.
 Artifactory сам забирает образы из GHCR и кэширует у себя.
 
+**6.0. Мастер первого запуска (один раз).** При первом входе в UI
+(http://localhost:8082, admin / password) запустится мастер настройки:
+
+- примите **EULA** — без этого docker-API отвечает 503;
+- на шаге **Base URL** укажите `http://localhost:8081` — именно через
+  этот адрес мы будем ходить за образами;
+- шаг создания репозиториев **пропустите** (Skip) — свои создадим
+  сейчас сами и разберёмся, что к чему.
+
+Если мастер уже пройден раньше — просто проверьте Base URL:
+Administration → General → Settings → Base URL.
+
 **6.1. Remote-репозиторий.** UI → Administration → Repositories →
 Add Repositories → Remote Repository → Docker:
 
@@ -283,16 +296,12 @@ Docker:
 - В список Included добавьте `docker-ghcr` — виртуальный репозиторий
   станет единой точкой входа поверх него.
 
-**6.3. Доступ по порту.** Administration → Artifactory → General →
-HTTP Settings: Docker Access Method = **Port**. Затем откройте настройки
-репозитория `docker` и впишите порт **8090** (мы пробросили его в
-`docker-compose.yml` заранее).
-
-**6.4. Проверяем pull-through:**
+**6.3. Проверяем pull-through.** Образы забираем path-методом:
+адрес `localhost:8081`, а имя репозитория — часть пути образа:
 
 ```bash
-docker login localhost:8090   # логин/пароль от Artifactory
-docker pull localhost:8090/<ВПИШИТЕ логин>/pipeline-lab:latest
+docker login localhost:8081   # логин/пароль от Artifactory
+docker pull localhost:8081/docker/<ВПИШИТЕ логин>/pipeline-lab:latest
 ```
 
 Образ скачался. Теперь найдите его в UI Artifactory: Application →
@@ -312,7 +321,7 @@ cp templates/docker-compose.deploy.yml deploy/docker-compose.yml  # или пр�
 ```yaml
 services:
   app:
-    image: localhost:8090/<ВПИШИТЕ логин>/pipeline-lab:latest
+    image: localhost:8081/docker/<ВПИШИТЕ логин>/pipeline-lab:latest
     container_name: demo-app
     ports:
       - "8080:8000"
@@ -343,5 +352,11 @@ Artifactory → работающий контейнер.
   Re-run.
 - `denied: permission_denied` при пуше — нет шага Login to GHCR или
   нет `packages: write` в permissions.
-- `docker pull localhost:8090/...` отвечает 404 — проверьте, что пакет
+- `docker pull localhost:8081/...` отвечает 404 — проверьте, что пакет
   в GHCR публичный, а в remote-репозитории верные логин и токен.
+- `docker pull` отвечает 503 `must accept the EULA` — примите EULA
+  в веб-интерфейсе (мастер первого запуска) и повторите.
+- push/push падает с TLS-ошибкой — добавьте `localhost:8081` в
+  insecure-registries (Docker Desktop: Settings → Docker Engine;
+  colima: секция `docker:` в `~/.colima/default/colima.yaml`)
+  и перезапустите Docker.

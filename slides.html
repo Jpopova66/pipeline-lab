@@ -184,7 +184,7 @@
   <h2>Деплой без Kubernetes</h2>
   <pre><span class="k">services:</span>
   <span class="k">app:</span>
-    <span class="k">image:</span> localhost:8092/pipeline-lab:1.0.0  <span class="c"># release-репозиторий</span>
+    <span class="k">image:</span> localhost:8081/docker-release-local/pipeline-lab:1.0.0  <span class="c"># release-репозиторий</span>
     <span class="k">ports:</span> ["8080:8000"]</pre>
   <ul>
     <li><code>docker compose pull && up -d</code> — весь деплой</li>
