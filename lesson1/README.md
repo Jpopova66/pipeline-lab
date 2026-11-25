@@ -32,14 +32,18 @@ git remote add origin git@github.com:<ВПИШИТЕ логин>/pipeline-lab.gi
 git push -u origin main
 ```
 
-**0.2. Стенд Artifactory.** Тот же, что в прошлой лабораторной:
+**0.2. Стенд реестра.** В этой лаборатории — JFrog Container Registry
+(JCR): бесплатная версия Artifactory с поддержкой docker-репозиториев
+(artifactory-oss из прошлой лабы их не поддерживает). Если стенд
+прошлой лабы ещё запущен — сначала остановите его там
+(`docker compose down`), иначе порты займет он. Затем:
 
 ```bash
 docker compose up -d
 ```
 
-Дождитесь, пока откроется http://localhost:8082 (admin / password —
-кто менял пароль в artifactory-lab, используйте свой).
+Дождитесь, пока откроется http://localhost:8082 (admin / password).
+Контейнер один — база встроенная, postgres здесь не нужен.
 
 **0.3. Токен для GHCR.** GitHub → Settings → Developer settings →
 Personal access tokens → Tokens (classic) → Generate new token.
